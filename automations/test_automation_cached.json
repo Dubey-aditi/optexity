@@ -1,0 +1,51 @@
+{
+  "url": "https://www.roboform.com/filling-test-all-fields",
+  "parameters": {
+    "input_parameters": {
+      "stock_ticker": ["NVDA"]
+    },
+    "generated_parameters": {}
+  },
+  "nodes": [
+    {
+      "type": "action_node",
+      "interaction_action": {
+        "input_text": {
+          "command": "locator(\"input[name='04fullname']\").first",
+          "prompt_instructions": "Enter the full name in the Full Name field",
+          "input_text": "myname"
+        }
+      }
+    },
+    {
+      "type": "action_node",
+      "interaction_action": {
+        "input_text": {
+          "command": "locator(\"input[name='10address1']\").first",
+          "prompt_instructions": "Enter the first address line in the Address Line 1 field",
+          "input_text": "xyz"
+        }
+      }
+    },
+    {
+      "type": "action_node",
+      "interaction_action": {
+        "input_text": {
+          "command": "locator(\"input[name='11address2']\").first",
+          "prompt_instructions": "Enter the second address line in the Address Line 2 field",
+          "input_text": "abc"
+        }
+      }
+    },
+    {
+      "type": "action_node",
+      "interaction_action": {
+        "input_text": {
+          "command": "locator(\"input[name='13adr_city']\").first",
+          "prompt_instructions": "Enter the city in the City field",
+          "input_text": "SF"
+        }
+      }
+    }
+  ]
+}

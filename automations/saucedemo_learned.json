@@ -1,0 +1,129 @@
+{
+  "url": "https://www.saucedemo.com/",
+  "parameters": {
+    "input_parameters": {
+      "username": [
+        "standard_user"
+      ],
+      "password": [
+        "secret_sauce"
+      ],
+      "first_name": [
+        "Aditi"
+      ],
+      "last_name": [
+        "Dubey"
+      ],
+      "postal_code": [
+        "560001"
+      ]
+    },
+    "generated_parameters": {}
+  },
+  "nodes": [
+    {
+      "type": "action_node",
+      "interaction_action": {
+        "input_text": {
+          "command": "locator(\"input[data-test='username']\").first",
+          "prompt_instructions": "Type {username[0]} into the 'Username' text box",
+          "input_text": "{username[0]}"
+        }
+      }
+    },
+    {
+      "type": "action_node",
+      "interaction_action": {
+        "input_text": {
+          "command": "locator(\"input[data-test='password']\").first",
+          "prompt_instructions": "Type {password[0]} into the 'Password' text box",
+          "input_text": "{password[0]}"
+        }
+      }
+    },
+    {
+      "type": "action_node",
+      "interaction_action": {
+        "click_element": {
+          "command": "locator(\"input[data-test='login-button']\").first",
+          "prompt_instructions": "Click the 'Login' submit button"
+        }
+      }
+    },
+    {
+      "type": "action_node",
+      "interaction_action": {
+        "click_element": {
+          "command": "locator(\"button[data-test='add-to-cart-sauce-labs-backpack']\").first",
+          "prompt_instructions": "Click the 'Add to cart' button for the Sauce Labs Backpack"
+        }
+      }
+    },
+    {
+      "type": "action_node",
+      "interaction_action": {
+        "click_element": {
+          "command": "locator(\"a[data-test='shopping-cart-link']\").first",
+          "prompt_instructions": "Click the shopping cart link/button to go to the cart"
+        }
+      }
+    },
+    {
+      "type": "action_node",
+      "interaction_action": {
+        "click_element": {
+          "command": "locator(\"button[data-test='checkout']\").first",
+          "prompt_instructions": "Click the 'Checkout' button"
+        }
+      }
+    },
+    {
+      "type": "action_node",
+      "interaction_action": {
+        "input_text": {
+          "command": "locator(\"input[data-test='firstName']\").first",
+          "prompt_instructions": "Type {first_name[0]} into the 'First Name' text box",
+          "input_text": "{first_name[0]}"
+        }
+      }
+    },
+    {
+      "type": "action_node",
+      "interaction_action": {
+        "input_text": {
+          "command": "locator(\"input[data-test='lastName']\").first",
+          "prompt_instructions": "Type {last_name[0]} into the 'Last Name' text box",
+          "input_text": "{last_name[0]}"
+        }
+      }
+    },
+    {
+      "type": "action_node",
+      "interaction_action": {
+        "input_text": {
+          "command": "locator(\"input[data-test='postalCode']\").first",
+          "prompt_instructions": "Type {postal_code[0]} into the 'Zip/Postal Code' text box",
+          "input_text": "{postal_code[0]}"
+        }
+      }
+    },
+    {
+      "type": "action_node",
+      "interaction_action": {
+        "click_element": {
+          "command": "locator(\"input[data-test='continue']\").first",
+          "prompt_instructions": "Click the 'Continue' submit button"
+        }
+      }
+    },
+    {
+      "type": "action_node",
+      "interaction_action": {
+        "click_element": {
+          "command": "locator(\"button[data-test='finish']\").first",
+          "prompt_instructions": "Click the 'Finish' button to confirm the order"
+        }
+      }
+    }
+  ]
+}
