@@ -11,6 +11,7 @@ It stays thin because litellm speaks the OpenAI wire format, so browser-use's
 own ``OpenAIMessageSerializer`` does the message conversion.
 """
 
+import json
 import logging
 from dataclasses import dataclass, field
 from typing import Any, TypeVar, overload
@@ -27,9 +28,54 @@ from pydantic import BaseModel
 from optexity.utils.llm_settings import llm_settings, resolve_llm_api_key
 
 from .litellm_model import litellm_fallbacks, reasoning_effort_for
-from .llm_model import parse_json_from_completion
+from .llm_model import extract_json_objects, parse_json_from_completion
 
 logger = logging.getLogger(__name__)
+
+# browser-use's agent output: these fields around a list of one-key actions.
+_AGENT_BRAIN_FIELDS = ("thinking", "evaluation_previous_goal", "memory", "next_goal")
+
+
+def _repair_agent_output(
+    content: str, output_format: type[BaseModel]
+) -> BaseModel | None:
+    """Recover an agent output whose actions are right but whose shape is not.
+
+    Anthropic does not enforce a non-strict tool schema, and on browser-use's large
+    action union a model sometimes misplaces the fields around the actions: bare
+    field names inside the action list (`"memory", {"click": ...}`), or a brain
+    field inside an action (`{"next_goal": "...", "click": ...}`). The actions
+    themselves are intact, so this moves brain fields back to the top level and
+    drops non-object list entries. Actions are never altered; anything that still
+    does not validate returns None and the original error stands.
+    """
+    if "action" not in getattr(output_format, "model_fields", {}):
+        return None
+    for block in [content.strip(), *extract_json_objects(content)]:
+        try:
+            data = json.loads(block)
+        except ValueError:
+            continue
+        if not isinstance(data, dict) or not isinstance(data.get("action"), list):
+            continue
+        actions = []
+        for item in data["action"]:
+            if not isinstance(item, dict):
+                continue
+            item = dict(item)
+            for name in _AGENT_BRAIN_FIELDS:
+                if isinstance(item.get(name), str):
+                    data.setdefault(name, item.pop(name))
+            if item:
+                actions.append(item)
+        if not actions:
+            continue
+        try:
+            return output_format.model_validate({**data, "action": actions})
+        except ValueError:
+            continue
+    return None
+
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -168,8 +214,23 @@ class ChatLiteLLM(BaseChatModel):
             try:
                 parsed = parse_json_from_completion(content, output_format)
             except Exception as e:
+                repaired = _repair_agent_output(content, output_format)
+                if repaired is not None:
+                    logger.warning(
+                        f"{self.name} returned a misshapen agent output; "
+                        "repaired its structure, actions unchanged"
+                    )
+                    return ChatInvokeCompletion(
+                        completion=repaired, usage=usage, stop_reason=stop_reason
+                    )
+                # Say why: a truncated reply (finish_reason "length") needs a larger
+                # output budget, a prose reply needs a different model or prompt.
                 raise ModelProviderError(
-                    message=f"Could not parse structured output from {self.name}: {e}",
+                    message=(
+                        f"Could not parse structured output from {self.name} "
+                        f"(finish_reason={stop_reason}, {len(content)} chars, "
+                        f"ends with {content[-80:]!r}): {e}"
+                    ),
                     model=self.name,
                 ) from e
             logger.debug(

@@ -33,6 +33,7 @@ from optexity.inference.core.logging import (
 )
 from optexity.inference.infra.actual_browser import ActualBrowser
 from optexity.inference.infra.browser_health import consume_browser_restart_request
+from optexity.schema.automation import Automation
 from optexity.schema.enums import ExitCodes
 from optexity.schema.inference import InferenceRequest
 from optexity.schema.memory import Memory, SystemInfo
@@ -572,6 +573,27 @@ async def task_processor():
                         f"Failed to report task {task.task_id} failure: {fail_err}"
                     )
                 continue
+
+            # Dev-only: save the server's automation (e.g. one just made with the
+            # Recorder extension) to disk, so it can be read and edited locally.
+            # Runs before the override below so it always captures the server's copy.
+            if dump_path := os.getenv("OPTEXITY_DUMP_AUTOMATION"):
+                try:
+                    destination = pathlib.Path(dump_path)
+                    destination.parent.mkdir(parents=True, exist_ok=True)
+                    destination.write_text(
+                        task.automation.model_dump_json(indent=2, exclude_none=True)
+                    )
+                    logger.info(f"Dumped server automation to {destination}")
+                except Exception as dump_err:
+                    logger.warning(f"Failed to dump automation: {dump_err}")
+
+            # Dev-only: run a local automation JSON instead of the one the server allocated.
+            if local_automation := os.getenv("OPTEXITY_LOCAL_AUTOMATION"):
+                task.automation = Automation.model_validate_json(
+                    pathlib.Path(local_automation).read_text()
+                )
+                logger.info(f"Overrode task automation from {local_automation}")
 
             task_running = True
             last_task_start_time = datetime.now(timezone.utc)

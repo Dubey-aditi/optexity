@@ -173,6 +173,17 @@ class ActualBrowser:
         existing["download"]["default_directory"] = download_dir
         existing["download"]["prompt_for_download"] = False
 
+        # Chrome's password manager raises a browser-level dialog after a login
+        # (offer to save, or "Change your password" for a breached one), and while
+        # it is up the page ignores clicks and navigation from Playwright and CDP
+        # alike — invisibly, since page screenshots do not show browser UI. The
+        # command-line switches meant to prevent it are only passed on the native
+        # launch path, so turn it off in the profile, which both paths read.
+        existing["credentials_enable_service"] = False
+        existing.setdefault("profile", {})
+        existing["profile"]["password_manager_enabled"] = False
+        existing["profile"]["password_manager_leak_detection"] = False
+
         prefs_path.write_text(json.dumps(existing))
         logger.info(
             f"Seeded print prefs at {prefs_path} -> save PDFs to {download_dir}"

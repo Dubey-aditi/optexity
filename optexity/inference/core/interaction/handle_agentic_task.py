@@ -23,7 +23,6 @@ async def handle_agentic_task(
 ):
 
     if agentic_task_action.backend == "browser_use":
-
         if isinstance(agentic_task_action, CloseOverlayPopupAction):
             tools = Tools(
                 exclude_actions=[
@@ -46,7 +45,15 @@ async def handle_agentic_task(
                 ]
             )
         else:
-            tools = Tools()
+            # browser-use drops its screenshot tool when vision is off, but only for
+            # the Tools it builds itself. Passing our own skipped that, so a model
+            # without vision could call screenshot, never receive the image, and ask
+            # again until max_steps ran out.
+            tools = Tools(
+                exclude_actions=(
+                    [] if agentic_task_action.use_vision else ["screenshot"]
+                )
+            )
         llm = build_agent_llm(normalize_model(task.llm_provider, task.llm_model_name))
         browser_session = BrowserSession(
             cdp_url=browser.cdp_url, keep_alive=agentic_task_action.keep_alive
@@ -65,6 +72,11 @@ async def handle_agentic_task(
             tools=tools,
             calculate_cost=True,
             save_conversation_path=step_directory,
+            # The judge is an extra LLM call that grades the finished run. Success is
+            # taken from the agent's own done(success=...), so it adds cost and
+            # nothing else — and it fails outright on Anthropic models, which reject
+            # the JPEG screenshots it sends labelled as PNG.
+            use_judge=False,
         )
         logger.debug(f"Starting browser session for agentic task {browser.cdp_url} ")
         await agent.browser_session.start()

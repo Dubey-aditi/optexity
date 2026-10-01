@@ -1,7 +1,9 @@
 import asyncio
+import logging
 import os
 import sys
 
+from optexity.cache.learning import LearningSettings, learn_from_run
 from optexity.inference.core.run_automation import run_automation
 from optexity.private_nodes import load_plugins
 from optexity.schema.enums import ExitCodes
@@ -32,6 +34,13 @@ async def main():
     cdp_url = sys.argv[4]
     max_tries = int(sys.argv[5]) if len(sys.argv) > 5 else 1
 
+    # Learning happens here, in the process that ran the task, so the recorded
+    # actions never leave memory. The source is copied first: running substitutes
+    # input values into the nodes in place.
+    learning = LearningSettings.from_env()
+    learning.start_recording()
+    source = task.automation.model_copy(deep=True) if task.automation else None
+
     try:
         await run_automation(
             task,
@@ -42,6 +51,14 @@ async def main():
         )
     except Exception:
         _force_exit(ExitCodes.WORKER_CRASHED.value)
+
+    # Only a successful run is worth learning from: a failed one may have taken
+    # wrong turns, and caching them would make the next run fail faster.
+    if learning.enabled and source is not None and task.status == "success":
+        try:
+            await learn_from_run(task, source, learning)
+        except Exception as error:
+            logging.getLogger(__name__).error(f"learning: pass failed: {error}")
 
     if task.status == "success":
         _force_exit(ExitCodes.SUCCESS.value)

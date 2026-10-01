@@ -1,0 +1,20 @@
+{
+  "url": "https://www.saucedemo.com/",
+  "parameters": {
+    "input_parameters": {},
+    "generated_parameters": {}
+  },
+  "nodes": [
+    {
+      "type": "action_node",
+      "interaction_action": {
+        "agentic_task": {
+          "task": "Buy the Sauce Labs Backpack on this store as the standard test user. Ship it to Aditi Dubey, postal code 560001. Done when the order is confirmed.",
+          "max_steps": 40,
+          "use_vision": true,
+          "backend": "browser_use"
+        }
+      }
+    }
+  ]
+}

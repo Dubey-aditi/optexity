@@ -68,6 +68,14 @@ from optexity.schema.memory import BrowserState, ForLoopStatus, Memory, OutputDa
 from optexity.schema.task import Task
 from optexity.utils.settings import settings
 
+try:
+    from browser_use.cache import set_trace_context
+except ImportError:  # a browser-use build without the action-trace recorder
+
+    def set_trace_context(**context) -> None:
+        return None
+
+
 logger = logging.getLogger(__name__)
 
 # TODO: static check that index for all replacement of input variables are within the bounds of the input variables
@@ -980,7 +988,13 @@ async def _run_nodes(
     full_automation: list,
 ):
     """Dispatch a list of nodes (ActionNode, ForLoopNode, IfElseNode, AssertLocatorNode, or PrivateNode) for execution."""
-    for node in nodes:
+    # Tag recorded browser-use actions with the top-level node that caused them, so
+    # the learning layer can repair that one node. Nested nodes inherit their
+    # parent's position: only top-level nodes are ever rewritten.
+    is_top_level = task.automation is not None and nodes is task.automation.nodes
+    for position, node in enumerate(nodes):
+        if is_top_level:
+            set_trace_context(node=position)
         if isinstance(node, ForLoopNode):
             await handle_for_loop_node(node, memory, task, browser, full_automation)
         elif isinstance(node, IfElseNode):

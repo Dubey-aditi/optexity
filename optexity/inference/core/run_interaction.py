@@ -132,9 +132,26 @@ async def run_interaction_action(
                 interaction_action.download_url_as_pdf, task, memory, browser
             )
         elif interaction_action.agentic_task:
-            await handle_agentic_task(
+            history = await handle_agentic_task(
                 interaction_action.agentic_task, task, memory, browser
             )
+            # agent.run() returns rather than raises when it gives up, so without
+            # this an agent that hit max_steps was reported as a successful task.
+            # Not done at all (max_steps) and done-but-unsuccessful both count.
+            if history is not None and (
+                not history.is_done() or history.is_successful() is False
+            ):
+                if history.is_done():
+                    reason = history.final_result() or "agent reported failure"
+                else:
+                    # Either max_steps ran out or browser-use gave up after
+                    # consecutive failed steps; the last error says which.
+                    errors = [e for e in history.errors() if e]
+                    reason = (
+                        f"stopped after {history.number_of_steps()} steps without finishing"
+                        + (f"; last error: {errors[-1][:200]}" if errors else "")
+                    )
+                raise Exception(f"Agentic task did not complete: {reason}")
         elif interaction_action.close_overlay_popup:
             await handle_agentic_task(
                 interaction_action.close_overlay_popup, task, memory, browser
